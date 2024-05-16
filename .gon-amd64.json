@@ -1,0 +1,13 @@
+{
+  "source": ["./dist/macos-amd64_darwin_amd64_v1/baton-fullstory"],
+  "bundle_id": "com.conductorone.baton-fullstory",
+  "apple_id": {
+    "username" : "justin.gallardo@conductorone.com"
+  },
+  "sign": {
+    "application_identity": "Developer ID Application: Justin Gallardo (858DKH55XL)"
+  },
+  "zip" :{
+    "output_path":  "./dist/baton-fullstory-darwin-amd64.signed.zip"
+  }
+}
