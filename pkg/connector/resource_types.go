@@ -9,4 +9,5 @@ var userResourceType = &v2.ResourceType{
 	Id:          "user",
 	DisplayName: "User",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_USER},
+	Annotations: annotationsForUserResourceType(),
 }
