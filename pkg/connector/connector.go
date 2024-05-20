@@ -9,6 +9,8 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type FullStory struct {
@@ -39,6 +41,12 @@ func (fs *FullStory) Metadata(ctx context.Context) (*v2.ConnectorMetadata, error
 // Validate is called to ensure that the connector is properly configured. It should exercise any API credentials
 // to be sure that they are valid.
 func (fs *FullStory) Validate(ctx context.Context) (annotations.Annotations, error) {
+	pgVars := fullstory.NewPaginationVars("")
+	_, _, err := fs.client.ListUsers(ctx, pgVars)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "api key is not valid")
+	}
+
 	return nil, nil
 }
 
