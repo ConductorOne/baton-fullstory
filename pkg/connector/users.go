@@ -18,7 +18,9 @@ type userBuilder struct {
 
 func userResource(user *fullstory.User) (*v2.Resource, error) {
 	profile := map[string]interface{}{
-		"user_id": user.ID,
+		"user_id":      user.ID,
+		"user_uid":     user.UID,
+		"display_name": user.Name,
 	}
 
 	var status v2.UserTrait_Status_Status
@@ -65,7 +67,7 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 
 	var rv []*v2.Resource
 	for _, user := range users {
-		ur, err := userResource(&user)
+		ur, err := userResource(&user) // #nosec G601
 		if err != nil {
 			return nil, "", nil, fmt.Errorf("fullstory-connector: error creating user resource: %w", err)
 		}
