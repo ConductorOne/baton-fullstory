@@ -13,12 +13,12 @@ import (
 type config struct {
 	cli.BaseConfig `mapstructure:",squash"` // Puts the base config options in the same place as the connector options
 
-	Token string `mapstructure:"token"`
+	APIKey string `mapstructure:"api-key"`
 }
 
 // validateConfig is run after the configuration is loaded, and should return an error if it isn't valid.
 func validateConfig(ctx context.Context, cfg *config) error {
-	if cfg.Token == "" {
+	if cfg.APIKey == "" {
 		return status.Error(codes.InvalidArgument, "api token must be provided, use --help for more information")
 	}
 
@@ -26,5 +26,5 @@ func validateConfig(ctx context.Context, cfg *config) error {
 }
 
 func cmdFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().String("token", "", "FullStory API token. (BATON_FULLSTORY_TOKEN)")
+	cmd.PersistentFlags().String("api-key", "", "FullStory API Key to authenticate with. ($BATON_API_KEY)")
 }

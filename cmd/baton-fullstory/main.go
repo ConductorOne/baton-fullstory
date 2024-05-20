@@ -64,8 +64,8 @@ func getConnector(ctx context.Context, cfg *config) (types.ConnectorServer, erro
 	l := ctxzap.Extract(ctx)
 
 	var auth uhttp.AuthCredentials = &uhttp.NoAuth{}
-	if cfg.Token != "" {
-		auth = &CustomBasicAuth{Token: cfg.Token}
+	if cfg.APIKey != "" {
+		auth = &CustomBasicAuth{Token: cfg.APIKey}
 	}
 
 	cb, err := connector.New(ctx, auth)
