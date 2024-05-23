@@ -3,7 +3,7 @@ module github.com/conductorone/baton-fullstory
 go 1.22.3
 
 require (
-	github.com/conductorone/baton-sdk v0.1.35
+	github.com/conductorone/baton-sdk v0.1.36
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/spf13/cobra v1.8.0
 	go.uber.org/zap v1.27.0
