@@ -6,15 +6,17 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/conductorone/baton-sdk/pkg/cli"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
+	"github.com/conductorone/baton-sdk/pkg/field"
 	"github.com/conductorone/baton-sdk/pkg/types"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
 	"github.com/conductorone/baton-fullstory/pkg/connector"
+	configschema "github.com/conductorone/baton-sdk/pkg/config"
 )
 
 var version = "dev"
@@ -22,15 +24,13 @@ var version = "dev"
 func main() {
 	ctx := context.Background()
 
-	cfg := &config{}
-	cmd, err := cli.NewCmd(ctx, "baton-fullstory", cfg, validateConfig, getConnector)
+	_, cmd, err := configschema.DefineConfiguration(ctx, "baton-fullstory", getConnector, field.Configuration{Fields: []field.SchemaField{apikey}})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
 	cmd.Version = version
-	cmdFlags(cmd)
 
 	err = cmd.Execute()
 	if err != nil {
@@ -60,12 +60,12 @@ func (c *CustomBasicAuth) GetClient(ctx context.Context, options ...uhttp.Option
 	return httpClient, nil
 }
 
-func getConnector(ctx context.Context, cfg *config) (types.ConnectorServer, error) {
+func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
 
 	var auth uhttp.AuthCredentials = &uhttp.NoAuth{}
-	if cfg.APIKey != "" {
-		auth = &CustomBasicAuth{Token: cfg.APIKey}
+	if v.GetString("api-key") != "" {
+		auth = &CustomBasicAuth{Token: v.GetString("api-key")}
 	}
 
 	cb, err := connector.New(ctx, auth)
