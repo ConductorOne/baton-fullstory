@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	apikey = field.StringField("api-key", field.WithRequired(true))
+	apikey = field.StringField("api-key", field.WithRequired(true), field.WithDescription("FullStory API Key to authenticate with"))
 )
