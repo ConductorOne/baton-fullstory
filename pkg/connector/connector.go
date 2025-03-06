@@ -2,13 +2,16 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/conductorone/baton-fullstory/pkg/fullstory"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -50,8 +53,34 @@ func (fs *FullStory) Validate(ctx context.Context) (annotations.Annotations, err
 	return nil, nil
 }
 
+type CustomBasicAuth struct {
+	Token string
+}
+
+var _ uhttp.AuthCredentials = (*CustomBasicAuth)(nil)
+
+func (c *CustomBasicAuth) GetClient(ctx context.Context, options ...uhttp.Option) (*http.Client, error) {
+	httpClient, err := uhttp.NewClient(ctx, options...)
+	if err != nil {
+		return nil, fmt.Errorf("creating HTTP client failed: %w", err)
+	}
+
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: c.Token, TokenType: "basic"},
+	)
+	httpClient = oauth2.NewClient(ctx, ts)
+
+	return httpClient, nil
+}
+
 // New returns a new instance of the connector.
-func New(ctx context.Context, auth uhttp.AuthCredentials) (*FullStory, error) {
+func New(ctx context.Context, apiKey string) (*FullStory, error) {
+
+	var auth uhttp.AuthCredentials = &uhttp.NoAuth{}
+	if apiKey != "" {
+		auth = &CustomBasicAuth{Token: apiKey}
+	}
 	httpClient, err := auth.GetClient(ctx, uhttp.WithLogger(true, nil))
 	if err != nil {
 		return nil, err
