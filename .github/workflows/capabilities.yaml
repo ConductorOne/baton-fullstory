@@ -24,6 +24,8 @@ jobs:
         run: go build -o connector ./cmd/baton-fullstory
 
       - name: Run and save output
+        env:
+          BATON_API_KEY: example-api-key
         run: ./connector capabilities > baton_capabilities.json
 
       - name: Commit changes
