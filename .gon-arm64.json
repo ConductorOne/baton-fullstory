@@ -1,5 +1,5 @@
 {
-  "source": ["./dist/macos-arm64_darwin_arm64_v8.0/baton-fullstory"],
+  "source": ["./dist/macos-arm64_darwin_arm64/baton-fullstory"],
   "bundle_id": "com.conductorone.baton-fullstory",
   "apple_id": {
     "username" : "justin.gallardo@conductorone.com"
