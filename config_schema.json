@@ -2,8 +2,10 @@
   "fields": [
     {
       "name": "api-key",
+      "displayName": "API key",
       "description": "FullStory API Key to authenticate with",
       "isRequired": true,
+      "isSecret": true,
       "stringField": {
         "rules": {
           "isRequired": true
@@ -54,5 +56,8 @@
       "isOps": true,
       "boolField": {}
     }
-  ]
+  ],
+  "displayName": "Fullstory",
+  "helpUrl": "/docs/baton/fullstory",
+  "iconUrl": "/static/app-icons/fullstory.svg"
 }
