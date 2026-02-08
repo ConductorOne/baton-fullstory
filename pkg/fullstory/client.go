@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	Host = "api.fullstory.com"
+	DefaultBaseURL = "https://api.fullstory.com"
 
 	V2Endpoint    = "/v2"
 	UsersEndpoint = "/users"
@@ -17,25 +17,32 @@ const (
 
 type Client struct {
 	httpClient *uhttp.BaseHttpClient
+	baseURL    string
 }
 
-func NewClient(client *http.Client) *Client {
+func NewClient(client *http.Client, baseURL string) *Client {
+	if baseURL == "" {
+		baseURL = DefaultBaseURL
+	}
 	return &Client{
 		httpClient: uhttp.NewBaseHttpClient(client),
+		baseURL:    baseURL,
 	}
 }
 
 func (c *Client) prepareURL(path string) (*url.URL, error) {
+	base, err := url.Parse(c.baseURL)
+	if err != nil {
+		return nil, err
+	}
+
 	p, err := url.JoinPath(V2Endpoint, path)
 	if err != nil {
 		return nil, err
 	}
 
-	return &url.URL{
-		Scheme: "https",
-		Host:   Host,
-		Path:   p,
-	}, nil
+	base.Path = p
+	return base, nil
 }
 
 type PaginationVars struct {

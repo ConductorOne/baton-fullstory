@@ -5,6 +5,7 @@ import "reflect"
 
 type Fullstory struct {
 	ApiKey string `mapstructure:"api-key"`
+	BaseUrl string `mapstructure:"base-url"`
 }
 
 func (c *Fullstory) findFieldByTag(tagValue string) (any, bool) {
