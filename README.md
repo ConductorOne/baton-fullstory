@@ -1,6 +1,6 @@
 ![Baton Logo](./docs/images/baton-logo.png)
 
-# `baton-fullstory` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-fullstory.svg)](https://pkg.go.dev/github.com/conductorone/baton-fullstory) ![main ci](https://github.com/conductorone/baton-fullstory/actions/workflows/main.yaml/badge.svg)
+# `baton-fullstory` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-fullstory.svg)](https://pkg.go.dev/github.com/conductorone/baton-fullstory) ![verify](https://github.com/conductorone/baton-fullstory/actions/workflows/verify.yaml/badge.svg)
 
 `baton-fullstory` is a connector for FullStory built using the [Baton SDK](https://github.com/conductorone/baton-sdk). It communicates with the FullStory API, to sync data about users.
 
