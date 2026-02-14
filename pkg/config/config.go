@@ -15,6 +15,7 @@ var (
 	BaseURLField = field.StringField(
 		"base-url",
 		field.WithDescription("Override the FullStory API URL (for testing)"),
+		field.WithHidden(true),
 	)
 )
 
