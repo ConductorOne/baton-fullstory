@@ -2,86 +2,80 @@ package fullstory
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
 const (
-	Host = "api.fullstory.com"
-
-	V2Endpoint    = "/v2"
-	UsersEndpoint = "/users"
+	scimUsersPath = "/Users"
+	defaultCount  = 100
 )
 
 type Client struct {
-	httpClient *uhttp.BaseHttpClient
+	httpClient  *uhttp.BaseHttpClient
+	scimBaseURL string
 }
 
-func NewClient(client *http.Client) *Client {
+func NewClient(client *http.Client, scimBaseURL string) *Client {
 	return &Client{
-		httpClient: uhttp.NewBaseHttpClient(client),
+		httpClient:  uhttp.NewBaseHttpClient(client),
+		scimBaseURL: scimBaseURL,
 	}
 }
 
-func (c *Client) prepareURL(path string) (*url.URL, error) {
-	p, err := url.JoinPath(V2Endpoint, path)
-	if err != nil {
-		return nil, err
-	}
-
-	return &url.URL{
-		Scheme: "https",
-		Host:   Host,
-		Path:   p,
-	}, nil
-}
-
+// PaginationVars holds SCIM pagination state.
+// StartIndex is 1-based per the SCIM spec.
 type PaginationVars struct {
-	NextPageToken string `json:"nextPageToken"`
+	StartIndex int
 }
 
-func NewPaginationVars(nextPageToken string) *PaginationVars {
-	return &PaginationVars{
-		NextPageToken: nextPageToken,
+func NewPaginationVars(startIndex int) *PaginationVars {
+	return &PaginationVars{StartIndex: startIndex}
+}
+
+// ListUsers fetches FullStory teammates via the SCIM /Users endpoint.
+// Returns the list of users, the next startIndex (0 if no more pages), and any error.
+func (c *Client) ListUsers(ctx context.Context, pgVars *PaginationVars) ([]SCIMUser, int, error) {
+	u, err := url.Parse(c.scimBaseURL + scimUsersPath)
+	if err != nil {
+		return nil, 0, fmt.Errorf("parsing SCIM URL: %w", err)
 	}
-}
 
-type ListResponse[T any] struct {
-	Results  []T    `json:"results"`
-	NextPage string `json:"next_page_token"`
-}
+	startIndex := 1
+	if pgVars != nil && pgVars.StartIndex > 0 {
+		startIndex = pgVars.StartIndex
+	}
 
-func (c *Client) ListUsers(ctx context.Context, pgVars *PaginationVars) ([]User, string, error) {
+	query := url.Values{}
+	query.Set("startIndex", strconv.Itoa(startIndex))
+	query.Set("count", strconv.Itoa(defaultCount))
+	u.RawQuery = query.Encode()
+
 	options := []uhttp.RequestOption{
 		uhttp.WithAcceptJSONHeader(),
-		uhttp.WithContentTypeJSONHeader(),
-	}
-
-	u, err := c.prepareURL(UsersEndpoint)
-	if err != nil {
-		return nil, "", err
 	}
 
 	req, err := c.httpClient.NewRequest(ctx, http.MethodGet, u, options...)
 	if err != nil {
-		return nil, "", err
+		return nil, 0, fmt.Errorf("creating SCIM request: %w", err)
 	}
 
-	if pgVars != nil && pgVars.NextPageToken != "" {
-		query := url.Values{}
-		query.Set("page_token", pgVars.NextPageToken)
-		req.URL.RawQuery = query.Encode()
-	}
-
-	var res ListResponse[User]
+	var res SCIMListResponse
 	resp, err := c.httpClient.Do(req, uhttp.WithJSONResponse(&res))
 	if err != nil {
-		return nil, "", err
+		return nil, 0, fmt.Errorf("SCIM list users: %w", err)
 	}
-
 	defer resp.Body.Close()
 
-	return res.Results, res.NextPage, nil
+	// Calculate next page. SCIM startIndex is 1-based.
+	nextStart := 0
+	if startIndex+len(res.Resources) <= res.TotalResults {
+		nextStart = startIndex + len(res.Resources)
+	}
+
+	return res.Resources, nextStart, nil
 }

@@ -45,9 +45,7 @@ func main() {
 func getConnector(ctx context.Context, fsc *cfg.Fullstory) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
 
-	apiKey := fsc.ApiKey
-
-	cb, err := connector.New(ctx, apiKey)
+	cb, err := connector.New(ctx, fsc.ScimBaseUrl, fsc.ScimToken)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err

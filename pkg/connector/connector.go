@@ -20,46 +20,41 @@ type FullStory struct {
 	client *fullstory.Client
 }
 
-// ResourceSyncers returns a ResourceSyncer for each resource type that should be synced from the upstream service.
 func (fs *FullStory) ResourceSyncers(ctx context.Context) []connectorbuilder.ResourceSyncer {
 	return []connectorbuilder.ResourceSyncer{
 		newUserBuilder(fs.client),
 	}
 }
 
-// Asset takes an input AssetRef and attempts to fetch it using the connector's authenticated http client
-// It streams a response, always starting with a metadata object, following by chunked payloads for the asset.
 func (fs *FullStory) Asset(ctx context.Context, asset *v2.AssetRef) (string, io.ReadCloser, error) {
 	return "", nil, nil
 }
 
-// Metadata returns metadata about the connector.
 func (fs *FullStory) Metadata(ctx context.Context) (*v2.ConnectorMetadata, error) {
 	return &v2.ConnectorMetadata{
 		DisplayName: "FullStory",
-		Description: "Connector syncing FullStory users to Baton",
+		Description: "Connector syncing FullStory teammates to Baton via SCIM",
 	}, nil
 }
 
-// Validate is called to ensure that the connector is properly configured. It should exercise any API credentials
-// to be sure that they are valid.
 func (fs *FullStory) Validate(ctx context.Context) (annotations.Annotations, error) {
-	pgVars := fullstory.NewPaginationVars("")
+	pgVars := fullstory.NewPaginationVars(1)
 	_, _, err := fs.client.ListUsers(ctx, pgVars)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "api key is not valid")
+		return nil, status.Error(codes.Unauthenticated, "SCIM credentials are not valid")
 	}
 
 	return nil, nil
 }
 
-type CustomBasicAuth struct {
+// SCIMBearerAuth implements Bearer token authentication for SCIM.
+type SCIMBearerAuth struct {
 	Token string
 }
 
-var _ uhttp.AuthCredentials = (*CustomBasicAuth)(nil)
+var _ uhttp.AuthCredentials = (*SCIMBearerAuth)(nil)
 
-func (c *CustomBasicAuth) GetClient(ctx context.Context, options ...uhttp.Option) (*http.Client, error) {
+func (c *SCIMBearerAuth) GetClient(ctx context.Context, options ...uhttp.Option) (*http.Client, error) {
 	httpClient, err := uhttp.NewClient(ctx, options...)
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client failed: %w", err)
@@ -67,18 +62,17 @@ func (c *CustomBasicAuth) GetClient(ctx context.Context, options ...uhttp.Option
 
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: c.Token, TokenType: "basic"},
+		&oauth2.Token{AccessToken: c.Token, TokenType: "Bearer"},
 	)
 	httpClient = oauth2.NewClient(ctx, ts)
 
 	return httpClient, nil
 }
 
-// New returns a new instance of the connector.
-func New(ctx context.Context, apiKey string) (*FullStory, error) {
+func New(ctx context.Context, scimBaseURL string, scimToken string) (*FullStory, error) {
 	var auth uhttp.AuthCredentials = &uhttp.NoAuth{}
-	if apiKey != "" {
-		auth = &CustomBasicAuth{Token: apiKey}
+	if scimToken != "" {
+		auth = &SCIMBearerAuth{Token: scimToken}
 	}
 	httpClient, err := auth.GetClient(ctx, uhttp.WithLogger(true, nil))
 	if err != nil {
@@ -86,6 +80,6 @@ func New(ctx context.Context, apiKey string) (*FullStory, error) {
 	}
 
 	return &FullStory{
-		client: fullstory.NewClient(httpClient),
+		client: fullstory.NewClient(httpClient, scimBaseURL),
 	}, nil
 }
