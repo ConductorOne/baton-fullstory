@@ -75,7 +75,7 @@ func (c *CustomBasicAuth) GetClient(ctx context.Context, options ...uhttp.Option
 }
 
 // New returns a new instance of the connector.
-func New(ctx context.Context, apiKey string) (*FullStory, error) {
+func New(ctx context.Context, apiKey string, baseURL string) (*FullStory, error) {
 	var auth uhttp.AuthCredentials = &uhttp.NoAuth{}
 	if apiKey != "" {
 		auth = &CustomBasicAuth{Token: apiKey}
@@ -86,6 +86,6 @@ func New(ctx context.Context, apiKey string) (*FullStory, error) {
 	}
 
 	return &FullStory{
-		client: fullstory.NewClient(httpClient),
+		client: fullstory.NewClient(httpClient, baseURL),
 	}, nil
 }

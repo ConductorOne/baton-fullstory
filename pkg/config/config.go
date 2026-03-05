@@ -12,12 +12,19 @@ var (
 		field.WithRequired(true),
 		field.WithIsSecret(true),
 	)
+	BaseURLField = field.StringField(
+		"base-url",
+		field.WithDescription("Override the FullStory API URL (for testing)"),
+		field.WithHidden(true),
+		field.WithExportTarget(field.ExportTargetCLIOnly),
+	)
 )
 
 //go:generate go run ./gen
 var Config = field.NewConfiguration(
 	[]field.SchemaField{
 		APIKeyField,
+		BaseURLField,
 	},
 	field.WithConnectorDisplayName("Fullstory"),
 	field.WithHelpUrl("/docs/baton/fullstory"),

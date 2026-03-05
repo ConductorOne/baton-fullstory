@@ -46,8 +46,9 @@ func getConnector(ctx context.Context, fsc *cfg.Fullstory) (types.ConnectorServe
 	l := ctxzap.Extract(ctx)
 
 	apiKey := fsc.ApiKey
+	baseURL := fsc.BaseUrl
 
-	cb, err := connector.New(ctx, apiKey)
+	cb, err := connector.New(ctx, apiKey, baseURL)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err
