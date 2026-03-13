@@ -40,9 +40,9 @@ func NewPaginationVars(startIndex int) *PaginationVars {
 // ListUsers fetches FullStory teammates via the SCIM /Users endpoint.
 // Returns the list of users, the next startIndex (0 if no more pages), and any error.
 func (c *Client) ListUsers(ctx context.Context, pgVars *PaginationVars) ([]*SCIMUser, int, error) {
-	path, err := url.JoinPath(c.scimBaseURL + scimUsersPath)
+	path, err := url.JoinPath(c.scimBaseURL, scimUsersPath)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("baton-fullstory: error building the path for the request %w", err)
 	}
 
 	urlAddress, err := url.Parse(path)
