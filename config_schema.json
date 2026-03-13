@@ -93,9 +93,20 @@
       }
     },
     {
-      "name": "api-key",
-      "displayName": "API key",
-      "description": "FullStory API Key to authenticate with",
+      "name": "scim-base-url",
+      "displayName": "SCIM Base URL",
+      "description": "FullStory SCIM base URL (found in Settings \u003e Account Management \u003e SSO)",
+      "isRequired": true,
+      "stringField": {
+        "rules": {
+          "isRequired": true
+        }
+      }
+    },
+    {
+      "name": "scim-token",
+      "displayName": "SCIM Token",
+      "description": "FullStory SCIM bearer token for authentication",
       "isRequired": true,
       "isSecret": true,
       "stringField": {

@@ -10,6 +10,9 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 )
 
+// FullStory SCIM API client.
+// API docs: https://developer.fullstory.com/scim
+// Required: SCIM bearer token (generated via Settings > Account Management > SSO).
 const (
 	scimUsersPath = "/Users"
 	defaultCount  = 100
