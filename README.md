@@ -10,6 +10,8 @@ Check out [Baton](https://github.com/conductorone/baton) to learn more about the
 
 To work with the connector, you need a FullStory SCIM bearer token and your organization's SCIM base URL. Both are found in FullStory under **Settings** > **Account Management** > **SSO**. A user with the **Admin** or **Architect** role must enable SCIM provisioning and generate the token.
 
+For step-by-step instructions on enabling SCIM in FullStory, refer to the [official FullStory SCIM configuration guide](https://help.fullstory.com/hc/en-us/articles/30544962047383-Configuring-SCIM-for-Automated-User-Provisioning-in-Fullstory#h_01JP0WHM089K089M0K8JD8ZWK8).
+
 # Getting Started
 
 ## brew
