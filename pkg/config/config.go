@@ -5,26 +5,27 @@ import (
 )
 
 var (
-	APIKeyField = field.StringField(
-		"api-key",
-		field.WithDisplayName("API key"),
-		field.WithDescription("FullStory API Key to authenticate with"),
+	SCIMBaseURLField = field.StringField(
+		"scim-base-url",
+		field.WithDisplayName("SCIM Base URL"),
+		field.WithDescription("FullStory SCIM base URL (found in Settings > Account Management > SSO)"),
+		field.WithRequired(true),
+	)
+
+	SCIMTokenField = field.StringField(
+		"scim-token",
+		field.WithDisplayName("SCIM Token"),
+		field.WithDescription("FullStory SCIM bearer token for authentication"),
 		field.WithRequired(true),
 		field.WithIsSecret(true),
-	)
-	BaseURLField = field.StringField(
-		"base-url",
-		field.WithDescription("Override the FullStory API URL (for testing)"),
-		field.WithHidden(true),
-		field.WithExportTarget(field.ExportTargetCLIOnly),
 	)
 )
 
 //go:generate go run ./gen
 var Config = field.NewConfiguration(
 	[]field.SchemaField{
-		APIKeyField,
-		BaseURLField,
+		SCIMBaseURLField,
+		SCIMTokenField,
 	},
 	field.WithConnectorDisplayName("Fullstory"),
 	field.WithHelpUrl("/docs/baton/fullstory"),
