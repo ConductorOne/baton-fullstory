@@ -39,7 +39,7 @@ func NewPaginationVars(startIndex int) *PaginationVars {
 
 // ListUsers fetches FullStory teammates via the SCIM /Users endpoint.
 // Returns the list of users, the next startIndex (0 if no more pages), and any error.
-func (c *Client) ListUsers(ctx context.Context, pgVars *PaginationVars) ([]SCIMUser, int, error) {
+func (c *Client) ListUsers(ctx context.Context, pgVars *PaginationVars) ([]*SCIMUser, int, error) {
 	u, err := url.Parse(c.scimBaseURL + scimUsersPath)
 	if err != nil {
 		return nil, 0, fmt.Errorf("parsing SCIM URL: %w", err)
@@ -73,7 +73,7 @@ func (c *Client) ListUsers(ctx context.Context, pgVars *PaginationVars) ([]SCIMU
 
 	// Calculate next page. SCIM startIndex is 1-based.
 	nextStart := 0
-	if startIndex+len(res.Resources) <= res.TotalResults {
+	if len(res.Resources) > 0 && startIndex+len(res.Resources) <= res.TotalResults {
 		nextStart = startIndex + len(res.Resources)
 	}
 

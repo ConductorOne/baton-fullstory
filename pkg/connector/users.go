@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/conductorone/baton-fullstory/pkg/fullstory"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -12,14 +13,38 @@ import (
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
 
+// getDisplayName returns the best available display name for a SCIM user.
+func getDisplayName(u *fullstory.SCIMUser) string {
+	if u.DisplayName != "" {
+		return u.DisplayName
+	}
+	if u.Name.GivenName != "" || u.Name.FamilyName != "" {
+		return strings.TrimSpace(u.Name.GivenName + " " + u.Name.FamilyName)
+	}
+	return u.UserName
+}
+
+// getEmail returns the best available email and whether it was the primary email.
+func getEmail(u *fullstory.SCIMUser) (string, bool) {
+	for _, e := range u.Emails {
+		if e.Primary {
+			return e.Value, true
+		}
+	}
+	if len(u.Emails) > 0 {
+		return u.Emails[0].Value, false
+	}
+	return u.UserName, false
+}
+
 type userBuilder struct {
 	client       *fullstory.Client
 	resourceType *v2.ResourceType
 }
 
 func userResource(user *fullstory.SCIMUser) (*v2.Resource, error) {
-	displayName := user.GetDisplayName()
-	email := user.GetEmail()
+	displayName := getDisplayName(user)
+	email, isPrimary := getEmail(user)
 
 	profile := map[string]interface{}{
 		"scim_id":      user.ID,
@@ -41,7 +66,7 @@ func userResource(user *fullstory.SCIMUser) (*v2.Resource, error) {
 		userResourceType,
 		user.ID,
 		[]rs.UserTraitOption{
-			rs.WithEmail(email, true),
+			rs.WithEmail(email, isPrimary),
 			rs.WithUserProfile(profile),
 			rs.WithStatus(status),
 		},
@@ -66,9 +91,11 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	// Convert string page token to SCIM startIndex
 	startIndex := 1
 	if token != "" {
-		if idx, err := strconv.Atoi(token); err == nil {
-			startIndex = idx
+		idx, err := strconv.Atoi(token)
+		if err != nil || idx < 1 {
+			return nil, "", nil, fmt.Errorf("fullstory-connector: invalid page token %q", token)
 		}
+		startIndex = idx
 	}
 
 	pgVars := fullstory.NewPaginationVars(startIndex)
@@ -79,7 +106,7 @@ func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 
 	var rv []*v2.Resource
 	for _, user := range users {
-		ur, err := userResource(&user)
+		ur, err := userResource(user)
 		if err != nil {
 			return nil, "", nil, fmt.Errorf("fullstory-connector: error creating user resource: %w", err)
 		}

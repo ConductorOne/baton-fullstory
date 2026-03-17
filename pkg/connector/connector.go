@@ -70,10 +70,10 @@ func (c *SCIMBearerAuth) GetClient(ctx context.Context, options ...uhttp.Option)
 }
 
 func New(ctx context.Context, scimBaseURL string, scimToken string) (*FullStory, error) {
-	var auth uhttp.AuthCredentials = &uhttp.NoAuth{}
-	if scimToken != "" {
-		auth = &SCIMBearerAuth{Token: scimToken}
+	if scimToken == "" {
+		return nil, fmt.Errorf("scim token is required")
 	}
+	var auth uhttp.AuthCredentials = &SCIMBearerAuth{Token: scimToken}
 	httpClient, err := auth.GetClient(ctx, uhttp.WithLogger(true, nil))
 	if err != nil {
 		return nil, err
