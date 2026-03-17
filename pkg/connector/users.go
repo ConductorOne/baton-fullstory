@@ -3,39 +3,112 @@ package connector
 import (
 	"context"
 	"fmt"
+	"strconv"
 
-	"github.com/conductorone/baton-fullstory/pkg/fullstory"
+	"github.com/conductorone/baton-fullstory/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
-	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
 
 type userBuilder struct {
-	client       *fullstory.Client
+	client       *client.Client
 	resourceType *v2.ResourceType
 }
 
-func userResource(user *fullstory.User) (*v2.Resource, error) {
+func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
+	return b.resourceType
+}
+
+// List returns all the users from the database as resource objects.
+// Users include a UserTrait because they are the 'shape' of a standard user.
+func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, opts rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
+	bag, token, err := parsePageToken(opts.PageToken.Token, &v2.ResourceId{ResourceType: userResourceType.Id})
+	if err != nil {
+		return nil, nil, fmt.Errorf("baton-fullstory: error parsing page token: %w", err)
+	}
+
+	startIndex := 1
+	if token != "" {
+		idx, err := strconv.Atoi(token)
+		if err != nil {
+			return nil, nil, fmt.Errorf("baton-fullstory: error parsing page token: %w", err)
+		}
+
+		startIndex = idx
+	}
+
+	pgVars := client.NewPaginationVars(startIndex)
+	users, nextStart, err := b.client.ListUsers(ctx, pgVars)
+	if err != nil {
+		return nil, nil, fmt.Errorf("baton-fullstory: error listing users: %w", err)
+	}
+
+	var rv []*v2.Resource
+	for _, user := range users {
+		userResource, err := b.createResource(user)
+		if err != nil {
+			return nil, nil, fmt.Errorf("baton-fullstory: error creating user resource: %w", err)
+		}
+
+		rv = append(rv, userResource)
+	}
+
+	// Convert next startIndex back to string page token
+	nextPage := ""
+	if nextStart > 0 {
+		nextPage = strconv.Itoa(nextStart)
+	}
+
+	nextToken, err := bag.NextToken(nextPage)
+	if err != nil {
+		return nil, nil, fmt.Errorf("baton-fullstory: error creating next page token: %w", err)
+	}
+
+	return rv, &rs.SyncOpResults{
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
+	return nil, nil, nil
+}
+
+func (b *userBuilder) Grants(_ context.Context, _ *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
+	return nil, nil, nil
+}
+
+func (b *userBuilder) createResource(user *client.SCIMUser) (*v2.Resource, error) {
+	displayName := user.GetDisplayName()
+	email := user.GetEmail()
+
 	profile := map[string]interface{}{
-		"user_id":      user.ID,
-		"user_uid":     user.UID,
-		"display_name": user.Name,
+		"scim_id":      user.ID,
+		"user_name":    user.UserName,
+		"display_name": displayName,
+	}
+
+	if user.Name.GivenName != "" {
+		profile["first_name"] = user.Name.GivenName
+	}
+
+	if user.Name.FamilyName != "" {
+		profile["last_name"] = user.Name.FamilyName
 	}
 
 	var status v2.UserTrait_Status_Status
-	if user.IsBeingDeleted {
-		status = v2.UserTrait_Status_STATUS_DISABLED
-	} else {
+	if user.Active {
 		status = v2.UserTrait_Status_STATUS_ENABLED
+	} else {
+		status = v2.UserTrait_Status_STATUS_DISABLED
 	}
 
 	res, err := rs.NewUserResource(
-		user.Name,
-		userResourceType,
+		displayName,
+		b.resourceType,
 		user.ID,
 		[]rs.UserTraitOption{
-			rs.WithEmail(user.Email, true),
+			rs.WithEmail(email.Value, email.Primary),
+			rs.WithUserLogin(user.UserName),
 			rs.WithUserProfile(profile),
 			rs.WithStatus(status),
 		},
@@ -47,51 +120,7 @@ func userResource(user *fullstory.User) (*v2.Resource, error) {
 	return res, nil
 }
 
-func (u *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
-	return userResourceType
-}
-
-// List returns all the users from the database as resource objects.
-// Users include a UserTrait because they are the 'shape' of a standard user.
-func (u *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
-	bag, token, err := parsePageToken(pToken.Token, &v2.ResourceId{ResourceType: userResourceType.Id})
-	if err != nil {
-		return nil, "", nil, fmt.Errorf("fullstory-connector: error parsing page token: %w", err)
-	}
-
-	pgVars := fullstory.NewPaginationVars(token)
-	users, nextPage, err := u.client.ListUsers(ctx, pgVars)
-	if err != nil {
-		return nil, "", nil, fmt.Errorf("fullstory-connector: error listing users: %w", err)
-	}
-
-	var rv []*v2.Resource
-	for _, user := range users {
-		ur, err := userResource(&user) // #nosec G601
-		if err != nil {
-			return nil, "", nil, fmt.Errorf("fullstory-connector: error creating user resource: %w", err)
-		}
-
-		rv = append(rv, ur)
-	}
-
-	nextToken, err := bag.NextToken(nextPage)
-	if err != nil {
-		return nil, "", nil, fmt.Errorf("fullstory-connector: error creating next page token: %w", err)
-	}
-
-	return rv, nextToken, nil, nil
-}
-
-func (u *userBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
-}
-
-func (u *userBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
-}
-
-func newUserBuilder(client *fullstory.Client) *userBuilder {
+func newUserBuilder(client *client.Client) *userBuilder {
 	return &userBuilder{
 		client:       client,
 		resourceType: userResourceType,

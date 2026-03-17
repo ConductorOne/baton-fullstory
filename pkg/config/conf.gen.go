@@ -4,8 +4,8 @@ package config
 import "reflect" 
 
 type Fullstory struct {
-	ApiKey string `mapstructure:"api-key"`
-	BaseUrl string `mapstructure:"base-url"`
+	ScimBaseUrl string `mapstructure:"scim-base-url"`
+	ScimToken string `mapstructure:"scim-token"`
 }
 
 func (c *Fullstory) findFieldByTag(tagValue string) (any, bool) {
