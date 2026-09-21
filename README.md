@@ -29,7 +29,7 @@ baton resources
 docker run --rm -v $(pwd):/out \
   -e BATON_SCIM_BASE_URL=https://app.fullstory.com/scim/v2 \
   -e BATON_SCIM_TOKEN=your-scim-token \
-  ghcr.io/conductorone/baton-fullstory:latest -f "/out/sync.c1z"
+  public.ecr.aws/conductorone/baton-fullstory:latest -f "/out/sync.c1z"
 docker run --rm -v $(pwd):/out ghcr.io/conductorone/baton:latest -f "/out/sync.c1z" resources
 ```
 
